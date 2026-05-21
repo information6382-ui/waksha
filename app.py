@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify, render_template
 from groq import Groq
 import os
 
@@ -10,28 +10,32 @@ client = Groq(
 
 @app.route("/")
 def home():
-    return "Waksha AI is running!"
+    return render_template("index.html")
 
-@app.route("/roast")
+@app.route("/roast", methods=["POST"])
 def roast():
 
-    user_text = request.args.get("text")
+    data = request.json
+    user_text = data.get("text")
 
-    if not user_text:
-        return {"error": "No text provided"}
-
-    chat = client.chat.completions.create(
+    completion = client.chat.completions.create(
+        model="llama3-8b-8192",
         messages=[
             {
+                "role": "system",
+                "content": "You are a savage Sinhala AI roaster called Waksha AI."
+            },
+            {
                 "role": "user",
-                "content": f"Roast this in funny Sinhala style: {user_text}"
+                "content": user_text
             }
-        ],
-        model="llama3-8b-8192"
+        ]
     )
 
-    reply = chat.choices[0].message.content
+    reply = completion.choices[0].message.content
 
-    return {
+    return jsonify({
         "reply": reply
-    }
+    })
+
+app = app
